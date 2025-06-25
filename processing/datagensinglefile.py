@@ -75,8 +75,12 @@ def parseFile(filein,tag,nevents=-1):
 
                         # When you have all time slices:
                         if len(cur_cluster) == 20:
+                                adjustCluster(cur_cluster,cluster_truth)
+
                                 events.append(cur_cluster)
                                 readyToGetTimeSlice = False
+
+                                
 
         #print("Number of clusters = ", len(cluster_truth))
         #print("Number of events = ",len(events))
@@ -87,6 +91,61 @@ def parseFile(filein,tag,nevents=-1):
 
         return arr_events, arr_truth
 
+
+def adjustCluster(cluster, truth):
+        # adjust y axis
+        charge = np.zeros(13)
+        pixelNo = np.arange(0,13) 
+        lastSlice = cluster[19]
+        for i in range(13):
+                charge[i] = np.sum(lastSlice[i*21:(i+1)*21+1])
+        center = int(np.round(np.sum(charge*pixelNo)/np.sum(charge)))
+
+        # adjust array
+        originalCenter = 6 
+        nRows = center-originalCenter 
+        
+        if nRows>0: 
+                for i in range(len(cluster)):
+                        cluster[i] = cluster[i][nRows*21:]
+                        for j in range(nRows*21):
+                                cluster[i].append(0)
+        if nRows<0: 
+                for i in range(len(cluster)):
+                        cluster[i] = cluster[i][:13*21+nRows*21]
+                        for j in range(abs(nRows*21)):
+                                cluster[i].insert(0,0)     
+        # determine new y local
+        truth[len(truth)-1][7]=str(float(truth[len(truth)-1][7])+nRows*25e-3)
+
+        # adjust x axis
+
+        charge = np.zeros(21)
+        pixelNo = np.arange(0,21)
+        for i in range(21):
+                for j in range(13):
+                        charge[i] += lastSlice[i+j*21]
+
+        center = int(np.round(np.sum(charge*pixelNo)/np.sum(charge)))
+        nCols = center-10
+
+        if nCols>0:
+                for k in range(len(cluster)):
+                        for i in range(13):
+                                for j in range(nCols):
+                                        cluster[k].insert(20+i*21,0)
+                                        cluster[k].pop(i*21)
+        if nCols<0:
+                for k in range(len(cluster)):
+                        for i in range(13):
+                                for j in range(abs(nCols)):
+                                        cluster[k].pop(20+i*21)
+                                        cluster[k].insert(i*21,0)
+
+        # determine new z global
+        truth[len(truth)-1][8]=str(float(truth[len(truth)-1][8])+nCols*25e-3)
+
+
 def makeParquet(filename, tag, inputdir, outdir = None):
         if outdir == None:
             outdir = inputdir
@@ -94,7 +153,7 @@ def makeParquet(filename, tag, inputdir, outdir = None):
         arr_events, arr_truth = parseFile(filein=f"{inputdir}/{filename}",tag=tag)
 
         #truth quantities - all are dumped to DF                                                                                                                           
-        df = pd.DataFrame(arr_truth, columns = ['x-entry', 'y-entry','z-entry', 'n_x', 'n_y', 'n_z', 'number_eh_pairs', 'y-local', 'pt', 'z-global', 'hit_time', 'PID'])
+        df = pd.DataFrame(arr_truth, columns = ['x-entry', 'y-entry','z-entry', 'n_x', 'n_y', 'n_z', 'number_eh_pairs', 'y-local', 'z-global', 'pt',  'hit_time', 'PID'])
         cols = df.columns
         for col in cols:
             df[col] = df[col].astype(float)

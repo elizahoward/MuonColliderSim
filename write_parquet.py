@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # user options
     parser = argparse.ArgumentParser(usage=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-o", "--outDir", help="Output directory", default="./Simulation_Output")
+    parser.add_argument("-o", "--outDir", help="Output directory", default="./Simulation_Output_Beam_Spot")
     parser.add_argument("-j", "--ncpu", help="Number of cores to use", default=35, type=int)
     parser.add_argument("-p", "--pixelAVdir", help="pixelAV directory", default="~/pixelav/")
     ops = parser.parse_args()
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
 
             # Write parquet file
-            parquet = ["python3", "/home/elizahoward/cmspix28-mc-sim/processing/datagen.py", "-f", f"{tag}.out", "-t", tag, "-d", outDir]
+            parquet = ["python3", "./processing/datagen.py", "-f", f"{tag}.out", "-t", tag, "-d", outDir]
 
             # commands
             commands.append([(parquet,),]) # weird formatting is because pool expects a tuple at input
